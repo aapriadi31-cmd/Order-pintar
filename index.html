@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Order Pintar PBF</title>
-<!-- Menghubungkan ke file Manifest PWA -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2563eb">
 <style>
@@ -22,7 +21,7 @@
         <header>
             <div>
                 <h1 id="title">Dashboard</h1>
-                <div class="muted">V6.4 — PWA Cloudflare CDN</div>
+                <div class="muted">V6.5 — PWA (Auto-Fix Cache)</div>
             </div>
             <button id="add" class="btn primary" style="display:none">＋ Tambah</button>
         </header>
@@ -44,11 +43,21 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script>
-const K='OPV6'; let d = {items:[], pbf:[], offers:[], importHistory:[]};
+const K='OPV6'; 
+let d = {items:[], pbf:[], offers:[], importHistory:[]};
 try {
     let raw = localStorage.getItem(K);
-    if(raw) { let parsed = JSON.parse(raw); if(parsed && Array.isArray(parsed.items)) d = parsed; }
-} catch(err) { console.error("Local Storage rusak, menggunakan data kosong."); }
+    if(raw) { 
+        let parsed = JSON.parse(raw); 
+        // AUTO-FIX: Memastikan data lama yang tidak punya array 'offers' tidak menyebabkan aplikasi blank
+        if(parsed && Array.isArray(parsed.items)) {
+            d.items = parsed.items || [];
+            d.pbf = parsed.pbf || [];
+            d.offers = parsed.offers || [];
+            d.importHistory = parsed.importHistory || [];
+        }
+    }
+} catch(err) { console.error("Local Storage error"); }
 
 if(d.items.length === 0 && d.pbf.length === 0) {
     d.items = [{id:'i1',name:'Amoxicillin 500 mg',unit:'tablet',real:10,sys:10,rop:50}];
@@ -202,7 +211,6 @@ window.editO = function(id){if(!d.items.length||!d.pbf.length)return alert('Buat
 
 nav(); render();
 
-// PENDAFTARAN SERVICE WORKER UNTUK PWA
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js').then(reg => {
