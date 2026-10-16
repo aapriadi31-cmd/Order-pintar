@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Order Pintar PBF</title>
+<!-- Menghubungkan ke file Manifest PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2563eb">
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#f5f7fb;color:#172033}.app{display:flex;min-height:100vh}.side{width:230px;background:#111827;color:#fff;padding:20px 12px;position:fixed;height:100vh}.logo{font-size:21px;font-weight:800;padding:8px 12px 25px}.logo b{color:#60a5fa}.nav button{display:block;width:100%;padding:12px 14px;margin:5px 0;border:0;border-radius:12px;background:transparent;color:#cbd5e1;text-align:left;font-weight:600;cursor:pointer}.nav button.on,.nav button:hover{background:#1f2937;color:#fff}.main{margin-left:230px;padding:26px;width:calc(100% - 230px)}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}h1{margin:0;font-size:26px}.muted{color:#667085}.btn{border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}.btn:disabled{opacity:0.5;cursor:not-allowed}.primary{background:#2563eb;color:#fff}.soft{background:#eaf0f7;color:#344054}.danger{background:#fee2e2;color:#991b1b}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:15px}.card{background:#fff;border:1px solid #e5eaf0;border-radius:17px;padding:18px;box-shadow:0 7px 25px #15223a0b}.stat small{color:#667085}.stat strong{display:block;font-size:27px;margin-top:7px}.section{margin-top:18px}.tablebox{overflow:auto;background:#fff;border:1px solid #e5eaf0;border-radius:15px}.table{width:100%;border-collapse:collapse;min-width:700px}.table th,.table td{padding:12px 14px;border-bottom:1px solid #edf0f4;text-align:left;font-size:13px}.table th{background:#f8fafc;color:#667085}.badge{padding:5px 8px;border-radius:99px;font-size:11px;font-weight:800}.ok{background:#dcfce7;color:#15803d}.warn{background:#ffedd5;color:#c2410c}.bad{background:#fee2e2;color:#b91c1c}.notice{padding:13px 15px;border-radius:12px;background:#eff6ff;color:#1d4ed8;margin-bottom:14px;font-size:13px}.modal{display:none;position:fixed;inset:0;background:#0f172a88;align-items:center;justify-content:center;padding:15px;z-index:9}.modal.show{display:flex}.box{background:white;border-radius:18px;padding:20px;width:min(600px,100%);max-height:90vh;overflow:auto}.mh{display:flex;justify-content:space-between;align-items:center}.mh h3{margin:0}.close{border:0;background:#eef2f6;border-radius:8px;width:34px;height:34px;cursor:pointer}.form{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:18px}.field.full{grid-column:1/-1}.field label{display:block;font-size:12px;font-weight:700;margin-bottom:5px}.field input,.field select{width:100%;padding:10px;border:1px solid #d6dde7;border-radius:9px}.foot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}.mobile{display:none}
+@media(max-width:800px){.side{display:none}.main{margin:0;width:100%;padding:16px 13px 75px}.grid{grid-template-columns:1fr 1fr}h1{font-size:22px}.mobile{display:flex;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #ddd;z-index:8;justify-content:space-around}.mobile button{border:0;background:none;padding:9px 4px;font-size:11px;color:#667085}.mobile .on{color:#2563eb;font-weight:800}.form{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+    <aside class="side">
+        <div class="logo">Order <b>Pintar</b></div>
+        <div id="nav" class="nav"></div>
+    </aside>
+    <main class="main">
+        <header>
+            <div>
+                <h1 id="title">Dashboard</h1>
+                <div class="muted">V6.4 — PWA Cloudflare CDN</div>
+            </div>
+            <button id="add" class="btn primary" style="display:none">＋ Tambah</button>
+        </header>
+        <div id="view"></div>
+    </main>
+</div>
+<div id="mobile" class="mobile"></div>
+<div id="modal" class="modal">
+    <div class="box">
+        <div class="mh"><h3 id="mt">Form</h3><button class="close" onclick="closeM()">×</button></div>
+        <div id="mb"></div>
+        <div class="foot">
+            <button class="btn soft" onclick="closeM()">Batal</button>
+            <button id="save" class="btn primary">Simpan</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+const K='OPV6'; let d = {items:[], pbf:[], offers:[], importHistory:[]};
+try {
+    let raw = localStorage.getItem(K);
+    if(raw) { let parsed = JSON.parse(raw); if(parsed && Array.isArray(parsed.items)) d = parsed; }
+} catch(err) { console.error("Local Storage rusak, menggunakan data kosong."); }
+
+if(d.items.length === 0 && d.pbf.length === 0) {
+    d.items = [{id:'i1',name:'Amoxicillin 500 mg',unit:'tablet',real:10,sys:10,rop:50}];
+    d.pbf = [{id:'p1',name:'PBF A',term:30,tol:0,profile:'Ketat'}];
+    saveDB();
+}
+
+const menus=[['dash','Dashboard'],['items','Master Barang'],['pbf','Master PBF'],['offers','Produk PBF'],['import','Import PBF'],['stock','Stok & ROP'],['order','Order Pintar']];
+let page='dash', edit=null, importState=null, importDraft=null;
+const $=x=>document.getElementById(x);
+function saveDB(){ localStorage.setItem(K,JSON.stringify(d)); }
+const money=n=>'Rp '+Math.round(n||0).toLocaleString('id-ID');
+const I=id=>d.items.find(x=>x.id==id), P=id=>d.pbf.find(x=>x.id==id);
+
+function hardReset() { if(confirm("AWAS: Semua data dihapus permanen. Lanjutkan?")) { localStorage.removeItem(K); location.reload(); } }
+
+function imports(){
+    let pbfOptions = d.pbf.map(x=>`<option value="${x.id}">${x.name}</option>`).join('');
+    if(!pbfOptions) pbfOptions = `<option value="">-- Buat Master PBF Dahulu --</option>`;
+    
+    $('view').innerHTML=`
+    <div class="card" style="background:#2563eb;color:#fff;margin-bottom:16px"><h2 style="margin:0 0 5px">Import Price List PBF (Smart Mapper)</h2><div style="color:#dbeafe">Fitur pembaca universal untuk berbagai format Excel/CSV PBF.</div></div>
+    <div class="grid" style="grid-template-columns:1fr 1fr">
+        <div class="card">
+            <b>1. Pilih PBF</b><select id="impPbf" style="width:100%;padding:11px;margin-top:10px;border:1px solid #d8dee8;border-radius:10px">${pbfOptions}</select><br><br>
+            <b>2. Pilih file Excel/CSV</b><input id="impFile" type="file" accept=".xlsx,.xls,.csv" style="width:100%;padding:12px;margin-top:10px;border:1px dashed #94a3b8;border-radius:10px">
+            <button class="btn primary" style="width:100%;margin-top:10px" onclick="previewImport()">Baca File & Mulai Mapping</button>
+        </div>
+        <div class="card"><b>Cara Kerja</b><p class="muted">Sistem memindai file dan menebak baris judul. Anda bisa mengubah tebakan sistem melalui Dropdown Mapping.</p></div>
+    </div><div id="impResult" style="margin-top:16px"></div>`;
+}
+
+function N(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').replace(/\b(tab|tablet|kapsul|caps|cap|box|dus|strip|blister|botol|pcs|pack)\b/g,' ').replace(/\s+/g,' ').trim()}
+function sim(a,b){a=N(a);b=N(b);if(a===b)return 1;let A=new Set(a.split(' ')),B=new Set(b.split(' '));return [...A].filter(x=>B.has(x)).length/Math.max(A.size||1,B.size||1)}
+function matchItem(name){let best=null,sc=0;for(let x of d.items){let q=sim(name,x.name);if(q>sc){sc=q;best=x}}return sc>=0.55?best:null}
+function headerKey(s){return String(s??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim()}
+function findColIndex(headers, aliases){let scored = headers.map((h, i) => {let k = headerKey(h), score = 0;for(let a of aliases){let ak = headerKey(a);if(k === ak) score = Math.max(score, 100);else if(k.includes(ak)) score = Math.max(score, 60 + ak.length/10);}return {idx: i, score};}).sort((a,b)=>b.score-a.score);return (scored[0] && scored[0].score >= 60) ? scored[0].idx : -1;}
+function chooseHeader(rows){let best={idx:-1,score:-1,headers:[]};for(let i=0; i<Math.min(rows.length, 40); i++){let h=(rows[i]||[]).map(v=>String(v??'').trim());let text=h.map(headerKey);let score=0;if(text.some(x=>/nama|produk|description|item|barang/.test(x))) score+=3;let price_matches=text.filter(x=>/hna|hpp|harga|netto|price|^h\d/.test(x)).length;if(price_matches>=2) score+=4; else if(price_matches>=1) score+=2;if(text.some(x=>/satuan|unit|kemasan|kms|box|dus|tube/.test(x))) score+=2;if(text.some(x=>/disc|diskon|discount/.test(x))) score+=1;if(text.some(x=>/stok|stock|qty|sisa/.test(x))) score+=1;if(score > best.score) best={idx:i,score,headers:h};}return best;}
+function readNum(v){if(typeof v==='number') return Number.isFinite(v) ? v : 0;let s=String(v??'').trim().replace(/\s/g,'').replace(/[^0-9,.-]/g,'');if(!s) return 0;if(s.includes(',')&&s.includes('.')){if(s.lastIndexOf(',')>s.lastIndexOf('.')) s=s.replace(/\./g,'').replace(',','.');else s=s.replace(/,/g,'');}else if(s.includes(',')){s=s.replace(',','.');}else if((s.match(/\./g)||[]).length>1){s=s.replace(/\./g,'');}const n=Number(s);return Number.isFinite(n) ? n : 0;}
+
+function previewImport(){
+    let f=$('impFile').files[0], pf=$('impPbf').value;
+    if(!pf) return alert('Buat/Pilih PBF terlebih dahulu.'); if(!f) return alert('Pilih file Excel/CSV terlebih dahulu.');
+    if(typeof XLSX==='undefined') return alert('Gagal memuat pustaka XLSX. Periksa koneksi internet Anda.');
+    $('impResult').innerHTML = `<div class="card"><p>Sedang membaca file, mohon tunggu...</p></div>`;
+    let reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            let data = new Uint8Array(e.target.result), wb = XLSX.read(data, {type: 'array'});
+            let selected=null, allRows=null, sheetName='';
+            for(const sn of wb.SheetNames){
+                const arr=XLSX.utils.sheet_to_json(wb.Sheets[sn], {header:1, defval:'', raw:true});
+                const h=chooseHeader(arr);
+                if(h && (!selected || h.score > selected.score)){ selected=h; allRows=arr; sheetName=sn; }
+            }
+            if(!selected || selected.score < 1) throw new Error('Format kolom harga & nama barang tidak ditemukan.');
+            importState = { file: f.name, pbf: pf, sheet: sheetName, allRows, headerIdx: selected.idx };
+            renderMappingUI();
+        } catch(err) { importState = null; importDraft = null; $('impResult').innerHTML=`<div class="card danger"><b>Gagal membaca file</b><p>${err.message}</p></div>`; }
+    };
+    reader.readAsArrayBuffer(f);
+}
+
+function renderMappingUI(){
+    let rows = importState.allRows, hIdx = importState.headerIdx, headers = (rows[hIdx]||[]).map(v=>String(v??'').trim());
+    let cols = {
+        name: findColIndex(headers, ['nama','produk','description','item','barang']), unit: findColIndex(headers, ['satuan','unit','kemasan','kms']),
+        conv: findColIndex(headers, ['isi','konversi','content']), stock: findColIndex(headers, ['stok','stock','qty','sisa']),
+        hna: findColIndex(headers, ['hna','harga normal','list price']), disc1: findColIndex(headers, ['disc 1','diskon 1']),
+        disc2: findColIndex(headers, ['disc 2','diskon 2']), hpp: findColIndex(headers, ['hpp','harga netto','netto 1','harga bersih','harga beli','harga 1','h1','harga']),
+        final: findColIndex(headers, ['harga 2','harga2','h2','netto 2'])
+    };
+    if(cols.name === -1) cols.name = headers.findIndex((h,i)=> h && i!==cols.unit && i!==cols.hpp && i!==cols.hna && !/^(no|stok|qty|harga|disc)/i.test(headerKey(h)));
+    let mkOpts = (selIdx) => `<option value="-1">-- Abaikan --</option>` + headers.map((h,i)=>`<option value="${i}" ${i===selIdx?'selected':''}>Col ${i+1}: ${h||'(Kosong)'}</option>`).join('');
+    let rowOpts = '';
+    for(let i=0; i<Math.min(rows.length, 40); i++){ let preview = (rows[i]||[]).filter(x=>x).join(' | ').substring(0, 70); rowOpts += `<option value="${i}" ${i===hIdx?'selected':''}>Baris ${i+1}: ${preview}...</option>`; }
+    $('impResult').innerHTML = `
+    <div class="card" style="margin-bottom:15px; border-top:4px solid #f59e0b"><h3 style="margin-top:0">Mapping Kolom Manual</h3>
+        <div class="field" style="margin-bottom:15px"><label>1. Pilih Baris Judul Kolom (Header)</label><select id="mapRow" onchange="changeHeaderRow()" style="padding:8px; width:100%">${rowOpts}</select></div>
+        <label style="display:block; font-size:12px; font-weight:700; margin-bottom:5px">2. Cocokkan Kolom</label>
+        <div class="grid" style="grid-template-columns:1fr 1fr; gap:12px; background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e5eaf0">
+            <div class="field"><label>Nama Barang *</label><select id="mapName">${mkOpts(cols.name)}</select></div><div class="field"><label>Satuan Beli</label><select id="mapUnit">${mkOpts(cols.unit)}</select></div>
+            <div class="field"><label>Isi/Konversi</label><select id="mapConv">${mkOpts(cols.conv)}</select></div><div class="field"><label>Stok PBF</label><select id="mapStock">${mkOpts(cols.stock)}</select></div>
+            <div class="field"><label>HNA (Harga Normal)</label><select id="mapHna">${mkOpts(cols.hna)}</select></div><div class="field"><label>Harga 1 (HPP / Nett)</label><select id="mapHpp">${mkOpts(cols.hpp)}</select></div>
+            <div class="field"><label>Diskon 1 (%)</label><select id="mapDisc1">${mkOpts(cols.disc1)}</select></div><div class="field"><label>Harga 2 (Final)</label><select id="mapFinal">${mkOpts(cols.final)}</select></div>
+        </div><button class="btn primary" style="margin-top:15px; width:100%; font-size:15px" onclick="renderPreviewTable()">Terapkan Mapping & Lihat Tabel</button>
+    </div><div id="previewTableCont"></div>`;
+}
+
+window.changeHeaderRow = function(){ importState.headerIdx = parseInt($('mapRow').value); renderMappingUI(); }
+
+window.renderPreviewTable = function(){
+    let c = { name: parseInt($('mapName').value), unit: parseInt($('mapUnit').value), conv: parseInt($('mapConv').value), stock: parseInt($('mapStock').value), hna: parseInt($('mapHna').value), disc1: parseInt($('mapDisc1').value), hpp: parseInt($('mapHpp').value), final: parseInt($('mapFinal').value) };
+    if(c.name === -1) return alert('Kolom "Nama Barang" wajib dipetakan!'); if(c.hna === -1 && c.hpp === -1 && c.final === -1) return alert('Minimal salah satu kolom Harga harus dipetakan!');
+    let parsed = [], skipped = 0, invalid = 0;
+    for(let i = importState.headerIdx + 1; i < importState.allRows.length; i++){
+        let r = importState.allRows[i] || []; let name = String(r[c.name] ?? '').trim();
+        if(!name) { skipped++; continue; }
+        let rawPrice = 0, priceMode = '', pFinal = c.final !== -1 ? readNum(r[c.final]) : 0, pHpp = c.hpp !== -1 ? readNum(r[c.hpp]) : 0, pHna = c.hna !== -1 ? readNum(r[c.hna]) : 0;
+        if(pFinal > 0) { rawPrice = pFinal; priceMode = 'Harga 2 (Final)'; } else if (pHpp > 0) { rawPrice = pHpp; priceMode = 'Harga 1 (HPP/Nett)'; } else if (pHna > 0) { rawPrice = pHna; let d1 = c.disc1 !== -1 ? readNum(r[c.disc1]) : 0; if(d1 > 0 && d1 <= 100) rawPrice *= (1 - d1/100); priceMode = `HNA${(d1) ? ' - Disc' : ''}`; }
+        if(!(rawPrice > 0)) { invalid++; continue; }
+        let unit = c.unit !== -1 ? String(r[c.unit]??'unit').trim() || 'unit' : 'unit', conv = c.conv !== -1 ? readNum(r[c.conv]) : 1;
+        if(!(conv > 0)) conv = 1;
+        let stock = c.stock !== -1 ? readNum(r[c.stock]) : 0, candidate = matchItem(name), confidence = candidate ? sim(name, candidate.name) : 0;
+        parsed.push({ row: i+1, name, unit, conv, price: rawPrice, stock, matchId: (candidate && confidence>=0.82) ? candidate.id : null, candidate: (candidate && confidence>=0.55) ? candidate.name : '', confidence, priceMode });
+    }
+    importDraft = { file: importState.file, pbf: importState.pbf, sheet: importState.sheet, rows: parsed, skipped, invalid, duplicate: (d.importHistory||[]).some(h => h.file === importState.file && h.pbf === importState.pbf), createdAt: new Date().toISOString() };
+    const show = parsed.slice(0, 15).map(x => `<tr><td>${x.row}</td><td>${x.name}</td><td>${x.unit}</td><td>${money(x.price)}<br><small class="muted" style="font-size:10px">${x.priceMode}</small></td><td>${x.conv}</td><td>${x.stock}</td><td>${x.matchId ? '✅ '+(I(x.matchId)?.name) : (x.candidate ? '⚠️ Cek: '+x.candidate : '✨ Master baru')}</td></tr>`).join('');
+    $('previewTableCont').innerHTML = `<div class="card"><h3 style="margin-top:0">Tabel Preview (Siap Disimpan)</h3><p class="muted" style="margin-bottom:10px">Baris valid: <b>${parsed.length}</b> · Dilewati kosong: <b>${skipped}</b> · Invalid/Harga 0: <b>${invalid}</b></p>${importDraft.duplicate ? '<div class="notice" style="background:#fff7ed;color:#9a3412"><b>Peringatan:</b> PBF ini pernah diimpor dari file yang sama. Data harga akan di-update (ditimpa).</div>' : ''}<div class="tablebox"><table class="table"><thead><tr><th>Baris</th><th>Nama produk</th><th>Satuan</th><th>Harga Terpilih</th><th>Isi/Konversi</th><th>Stok</th><th>Pencocokan Master</th></tr></thead><tbody>${show || '<tr><td colspan="7" style="text-align:center;padding:20px">Tidak ada data valid. Coba atur ulang mapping.</td></tr>'}</tbody></table></div><div style="display:flex; gap:10px; margin-top:20px"><button class="btn primary" style="flex:1; padding:14px; font-size:15px" onclick="commitImport()" ${parsed.length ? '' : 'disabled'}>✅ Simpan ${parsed.length} Data ke Database</button><button class="btn danger" onclick="$('impResult').innerHTML=''; importState=null; importDraft=null;">Batal</button></div></div>`;
+}
+
+window.commitImport = function(){
+    if(!importDraft || !importDraft.rows.length) return;
+    if(importDraft.duplicate && !confirm('Perbarui data PBF ini dari file yang sama?')) return;
+    let now=new Date().toISOString(), added=0, updated=0, newItems=0;
+    for(const x of importDraft.rows){
+        let item = x.matchId ? I(x.matchId) : null;
+        if(!item){ item = {id:'i'+Date.now()+Math.random().toString(36).slice(2,7), name:x.name, unit:x.unit, real:0, sys:0, rop:0}; d.items.push(item); newItems++; }
+        let o = d.offers.find(z => z.item === item.id && z.pbf === importDraft.pbf && headerKey(z.name) === headerKey(x.name));
+        let data = { item: item.id, pbf: importDraft.pbf, name: x.name, buy: x.unit, conv: x.conv, price: x.price, stock: x.stock, priceMode: x.priceMode, importedAt: now };
+        if(o){ Object.assign(o, data); updated++; } else { d.offers.push({id:'o'+Date.now()+Math.random().toString(36).slice(2,7), ...data}); added++; }
+    }
+    d.importHistory = d.importHistory || []; d.importHistory.push({ file:importDraft.file, pbf:importDraft.pbf, sheet:importDraft.sheet, valid:importDraft.rows.length, added, updated, createdAt:now });
+    saveDB(); let res = {file: importDraft.file, valid: importDraft.rows.length, added, updated, newItems}; importState = null; importDraft = null;
+    $('impResult').innerHTML = `<div class="card ok"><h3 style="margin-top:0; color:#15803d">✅ Impor Sukses Disimpan</h3><ul><li>${res.valid} baris diproses</li><li><b>${res.added}</b> Produk PBF baru</li><li><b>${res.updated}</b> Produk PBF ter-update</li><li><b>${res.newItems}</b> Master Barang otomatis dibuat</li></ul><button class="btn primary" onclick="go('offers')">Lihat Daftar Produk</button></div>`;
+}
+
+function nav(){let h=menus.map(m=>`<button class="${page==m[0]?'on':''}" onclick="go('${m[0]}')">${m[1]}</button>`).join('');$('nav').innerHTML=h;$('mobile').innerHTML=h}
+window.go = function(x){page=x;nav();render()}
+function render(){let m=menus.find(x=>x[0]==page);$('title').textContent=m[1];$('add').style.display=['items','pbf','offers'].includes(page)?'block':'none';if(page=='dash') dash(); else if(page=='items') items(); else if(page=='pbf') pbf(); else if(page=='offers') offers(); else if(page=='import') imports(); else if(page=='stock') stock(); else orders();}
+function dash(){$('view').innerHTML=`<div class="card" style="background:#2563eb;color:#fff;margin-bottom:16px"><h2 style="margin:0 0 5px">Order Pintar PBF</h2><div style="color:#dbeafe">Satu data dipakai lintas modul.</div></div><div class="grid"><div class="card stat"><small>Master Barang</small><strong>${d.items.length}</strong></div><div class="card stat"><small>PBF</small><strong>${d.pbf.length}</strong></div><div class="card stat"><small>Produk PBF</small><strong>${d.offers.length}</strong></div><div class="card stat"><small>Perlu Order</small><strong>${d.items.filter(x=>x.rop>x.real).length}</strong></div></div><div class="section card"><b>Pusat Bantuan & Reset</b><p class="muted">Jika aplikasi error, tekan tombol di bawah untuk membersihkan memori browser.</p><button class="btn danger" onclick="hardReset()">Reset Seluruh Data</button></div>`;}
+function table(head,rows){$('view').innerHTML=`<div class="tablebox"><table class="table"><thead><tr>${head.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows||`<tr><td colspan="${head.length}" style="text-align:center;padding:30px" class="muted">Belum ada data</td></tr>`}</tbody></table></div>`}
+function items(){table(['Barang','Satuan','Stok Real','Sistem','ROP','Aksi'],d.items.map(x=>`<tr><td><b>${x.name}</b></td><td>${x.unit}</td><td>${x.real}</td><td>${x.sys}</td><td>${x.rop}</td><td><button class="btn soft" onclick="editItem('${x.id}')">Edit</button> <button class="btn danger" onclick="delItem('${x.id}')">Hapus</button></td></tr>`).join(''))}
+function pbf(){table(['PBF','Termin','Toleransi','Profil','Aksi'],d.pbf.map(x=>`<tr><td><b>${x.name}</b></td><td>${x.term} hari</td><td>+${x.tol} hari</td><td><span class="badge ${x.profile=='Ketat'?'bad':x.profile=='Normal'?'warn':'ok'}">${x.profile}</span></td><td><button class="btn soft" onclick="editP('${x.id}')">Edit</button> <button class="btn danger" onclick="delP('${x.id}')">Hapus</button></td></tr>`).join(''))}
+function offers(){table(['Barang Internal','Nama PBF','PBF','Harga','Konversi','Harga/Unit Dasar','Stok PBF','Aksi'],d.offers.map(x=>{let i=I(x.item),p=P(x.pbf);return `<tr><td>${i?.name||'-'}</td><td><b>${x.name}</b></td><td>${p?.name||'-'}</td><td>${money(x.price)}</td><td>1 ${x.buy} = ${x.conv} ${i?.unit||'unit'}</td><td><b>${money(x.price/x.conv)}</b></td><td>${x.stock}</td><td><button class="btn soft" onclick="editO('${x.id}')">Edit</button></td></tr>`}).join(''))}
+function stock(){table(['Barang','Real','Sistem','ROP','Kebutuhan Beli','Status'],d.items.map(x=>{let n=Math.max(0,x.rop-x.real);return `<tr><td><b>${x.name}</b></td><td>${x.real}</td><td>${x.sys}</td><td>${x.rop}</td><td>${n}</td><td><span class="badge ${n?'bad':'ok'}">${n?'PERLU ORDER':'AMAN'}</span></td></tr>`}).join(''))}
+function orders(){let rows='';d.items.forEach(i=>{let need=Math.max(0,i.rop-i.real),os=d.offers.filter(o=>o.item==i.id&&o.price>0).sort((a,b)=>(a.price/a.conv)-(b.price/b.conv)),o=os[0];if(!need||!o)return;let packs=Math.ceil(need/o.conv);rows+=`<tr><td><b>${i.name}</b><br><small class="muted">butuh ${need} ${i.unit}</small></td><td>${P(o.pbf)?.name||'-'}<br><small>${o.name}</small></td><td>${money(o.price/o.conv)} / ${i.unit}</td><td><input value="${packs}" type="number" min="0" style="width:80px;padding:8px;border:1px solid #d5dce6;border-radius:8px"></td><td>${money(packs*o.price)}</td><td><span class="badge warn">Rekomendasi</span></td></tr>`});$('view').innerHTML=`<div class="notice">Harga dihitung dari satuan dasar termurah. QTY Pesan dibulatkan ke atas sesuai kemasan PBF.</div><div class="tablebox"><table class="table"><thead><tr><th>Barang</th><th>PBF Terpilih</th><th>Harga Dasar</th><th>Qty Pesan</th><th>Estimasi Biaya</th><th>Status</th></tr></thead><tbody>${rows||'<tr><td colspan="6" style="text-align:center;padding:30px" class="muted">Belum ada kebutuhan order</td></tr>'}</tbody></table></div>`}
+
+function modal(title,body,fn){$('mt').textContent=title;$('mb').innerHTML=body;$('save').onclick=fn;$('modal').classList.add('show')}
+window.closeM = function(){$('modal').classList.remove('show');edit=null}$('add').onclick=()=>page=='items'?editItem():page=='pbf'?editP():editO();
+
+const formItem=x=>`<div class="form"><div class="field full"><label>Nama Barang</label><input id="n" value="${x?.name||''}"></div><div class="field"><label>Satuan Dasar</label><input id="u" value="${x?.unit||'tablet'}"></div><div class="field"><label>Target ROP</label><input id="r" type="number" value="${x?.rop??0}"></div><div class="field"><label>Stok Real</label><input id="s" type="number" value="${x?.real??0}"></div><div class="field"><label>Stok Sistem</label><input id="sy" type="number" value="${x?.sys??0}"></div></div>`;
+window.editItem = function(id){edit=id;modal(id?'Edit Barang':'Tambah Barang',formItem(id?I(id):null),()=>{let x={name:$('n').value.trim(),unit:$('u').value.trim()\vert{}\vert{}'unit',rop:+$('r').value||0,real:+$('s').value\vert{}\vert{}0,sys:+$('sy').value||0};if(!x.name)return alert('Nama wajib diisi');if(id)Object.assign(I(id),x);else d.items.push({id:'i'+Date.now(),...x});saveDB();closeM();render()})}
+window.delItem = function(id){if(confirm('Hapus barang?')){d.items=d.items.filter(x=>x.id!=id);d.offers=d.offers.filter(x=>x.item!=id);saveDB();render()}}
+
+const formP=x=>`<div class="form"><div class="field full"><label>Nama PBF</label><input id="n" value="${x?.name||''}"></div><div class="field"><label>Termin Resmi (hari)</label><input id="t" type="number" value="${x?.term??30}"></div><div class="field"><label>Toleransi Operasional</label><input id="to" type="number" value="${x?.tol??0}"></div><div class="field full"><label>Profil</label><select id="pr"><option>Ketat</option><option>Normal</option><option>Longgar</option></select></div></div>`;
+window.editP = function(id){edit=id;let x=id?P(id):null;modal(id?'Edit PBF':'Tambah PBF',formP(x),()=>{let z={name:$('n').value.trim(),term:+$('t').value\vert{}\vert{}0,tol:+$('to').value||0,profile:$('pr').value};if(!z.name)return alert('Nama wajib diisi');if(id)Object.assign(P(id),z);else d.pbf.push({id:'p'+Date.now(),...z});saveDB();closeM();render()});setTimeout(()=>{if(x)$('pr').value=x.profile},0)}
+window.delP = function(id){if(d.offers.some(x=>x.pbf==id))return alert('PBF masih dipakai di Produk PBF.');if(confirm('Hapus PBF?')){d.pbf=d.pbf.filter(x=>x.id!=id);saveDB();render()}}
+
+window.editO = function(id){if(!d.items.length||!d.pbf.length)return alert('Buat Master Barang dan PBF dulu.');let x=id?d.offers.find(a=>a.id==id):null;modal(id?'Edit Produk PBF':'Tambah Produk PBF',`<div class="form"><div class="field"><label>Master Barang</label><select id="i">${d.items.map(a=>`<option value="${a.id}" ${x?.item==a.id?'selected':''}>${a.name}</option>`).join('')}</select></div><div class="field"><label>PBF</label><select id="p">${d.pbf.map(a=>`<option value="${a.id}" ${x?.pbf==a.id?'selected':''}>${a.name}</option>`).join('')}</select></div><div class="field full"><label>Nama di PBF</label><input id="nm" value="${x?.name||''}"></div><div class="field"><label>Satuan Beli</label><input id="b" value="${x?.buy||'box'}"></div><div class="field"><label>Isi/Konversi</label><input id="c" type="number" value="${x?.conv??1}"></div><div class="field"><label>Harga Final</label><input id="prc" type="number" value="${x?.price??0}"></div><div class="field"><label>Stok</label><input id="st" type="number" value="${x?.stock??0}"></div></div>`,()=>{let z={item:$('i').value,pbf:$('p').value,name:$('nm').value.trim(),buy:$('b').value.trim()\vert{}\vert{}'unit',conv:+$('c').value||1,price:+$('prc').value\vert{}\vert{}0,stock:+$('st').value||0};if(!z.name)return alert('Nama PBF wajib diisi');if(id)Object.assign(d.offers.find(a=>a.id==id),z);else d.offers.push({id:'o'+Date.now(),...z});saveDB();closeM();render()})}
+
+nav(); render();
+
+// PENDAFTARAN SERVICE WORKER UNTUK PWA
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').then(reg => {
+            console.log('ServiceWorker sukses didaftarkan', reg.scope);
+        }).catch(err => {
+            console.log('Pendaftaran ServiceWorker gagal: ', err);
+        });
+    });
+}
+</script>
+</body>
+</html>
