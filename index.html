@@ -1,154 +1,486 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Order Pintar PBF (Fix)</title>
-<meta name="theme-color" content="#2563eb">
-<style>
-*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#f5f7fb;color:#172033}.app{display:flex;min-height:100vh}.side{width:230px;background:#111827;color:#fff;padding:20px 12px;position:fixed;height:100vh}.logo{font-size:21px;font-weight:800;padding:8px 12px 25px}.logo b{color:#60a5fa}.nav button{display:block;width:100%;padding:12px 14px;margin:5px 0;border:0;border-radius:12px;background:transparent;color:#cbd5e1;text-align:left;font-weight:600;cursor:pointer}.nav button.on,.nav button:hover{background:#1f2937;color:#fff}.main{margin-left:230px;padding:26px;width:calc(100% - 230px)}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}h1{margin:0;font-size:26px}.muted{color:#667085}.btn{border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}.primary{background:#2563eb;color:#fff}.soft{background:#eaf0f7;color:#344054}.danger{background:#fee2e2;color:#991b1b}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:15px}.card{background:#fff;border:1px solid #e5eaf0;border-radius:17px;padding:18px}.stat small{color:#667085}.stat strong{display:block;font-size:27px;margin-top:7px}.tablebox{overflow:auto;background:#fff;border:1px solid #e5eaf0;border-radius:15px;margin-top:15px}.table{width:100%;border-collapse:collapse;min-width:700px}.table th,.table td{padding:12px 14px;border-bottom:1px solid #edf0f4;text-align:left;font-size:13px}.table th{background:#f8fafc;color:#667085}.badge{padding:5px 8px;border-radius:99px;font-size:11px;font-weight:800}.ok{background:#dcfce7;color:#15803d}.warn{background:#ffedd5;color:#c2410c}.bad{background:#fee2e2;color:#b91c1c}.modal{display:none;position:fixed;inset:0;background:#0f172a88;align-items:center;justify-content:center;padding:15px;z-index:9}.modal.show{display:flex}.box{background:white;border-radius:18px;padding:20px;width:min(600px,100%);max-height:90vh;overflow:auto}.mh{display:flex;justify-content:space-between;align-items:center}.mh h3{margin:0}.close{border:0;background:#eef2f6;border-radius:8px;width:34px;height:34px;cursor:pointer}.form{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:18px}.field.full{grid-column:1/-1}.field label{display:block;font-size:12px;font-weight:700;margin-bottom:5px}.field input,.field select{width:100%;padding:10px;border:1px solid #d6dde7;border-radius:9px}.foot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}.mobile{display:none}
-@media(max-width:800px){.side{display:none}.main{margin:0;width:100%;padding:16px 13px 75px}.grid{grid-template-columns:1fr 1fr}h1{font-size:22px}.mobile{display:flex;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #ddd;z-index:8;justify-content:space-around}.mobile button{border:0;background:none;padding:9px 4px;font-size:11px;color:#667085}.mobile .on{color:#2563eb;font-weight:800}.form{grid-template-columns:1fr}}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Pintar PBF</title>
+    <!-- Library Excel -->
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <style>
+        :root { --bg: #f3f4f6; --text: #1f2937; --blue: #2563eb; --blue-hover: #1d4ed8; --card: #ffffff; --border: #e5e7eb; }
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); color: var(--text); }
+        .app-container { display: flex; flex-direction: column; min-height: 100vh; }
+        .header { background-color: var(--card); padding: 16px 20px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center;}
+        .header h1 { margin: 0; font-size: 20px; color: var(--blue); }
+        .content { padding: 20px; flex: 1; padding-bottom: 80px; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .card-title { margin-top: 0; margin-bottom: 15px; font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; }
+        .form-control { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+        .btn { display: inline-block; padding: 10px 16px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; text-align: center; }
+        .btn-primary { background-color: var(--blue); color: white; }
+        .btn-primary:hover { background-color: var(--blue-hover); }
+        .btn-danger { background-color: #ef4444; color: white; }
+        .btn-block { display: block; width: 100%; margin-top: 10px; }
+        
+        /* Grid Layout for Mapping */
+        .mapping-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
+        @media (max-width: 600px) { .mapping-grid { grid-template-columns: 1fr; } }
+        
+        /* Table Styles */
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; }
+        th { background-color: #f9fafb; font-weight: 600; }
+        
+        /* Bottom Navigation for Mobile */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 10px 0; z-index: 20; }
+        .nav-item { background: none; border: none; font-size: 12px; color: #6b7280; display: flex; flex-direction: column; align-items: center; cursor: pointer; font-weight: 600; padding: 5px; }
+        .nav-item.active { color: var(--blue); }
+        
+        .alert { padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; }
+        .alert-info { background-color: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+        .alert-danger { background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        .alert-success { background-color: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    </style>
 </head>
 <body>
-<div class="app">
-    <aside class="side"><div class="logo">Order <b>Pintar</b></div><div id="nav" class="nav"></div></aside>
-    <main class="main">
-        <header><div><h1 id="title">Dashboard</h1><div class="muted">V6.6 — Clean Boot (No PWA)</div></div><button id="add" class="btn primary" style="display:none">＋ Tambah</button></header>
-        <div id="view"></div>
-    </main>
-</div>
-<div id="mobile" class="mobile"></div>
-<div id="modal" class="modal"><div class="box"><div class="mh"><h3 id="mt">Form</h3><button class="close" onclick="closeM()">×</button></div><div id="mb"></div><div class="foot"><button class="btn soft" onclick="closeM()">Batal</button><button id="save" class="btn primary">Simpan</button></div></div></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<div class="app-container">
+    <div class="header">
+        <h1>Order Pintar V7.0</h1>
+        <button class="btn btn-danger" style="padding: 5px 10px; font-size: 12px;" onclick="resetData()">Reset Data</button>
+    </div>
+
+    <div class="content" id="app-content">
+        <!-- Konten Halaman Akan Dimuat Di Sini -->
+    </div>
+
+    <div class="bottom-nav">
+        <button class="nav-item active" id="nav-dash" onclick="navigate('dash')">Dashboard</button>
+        <button class="nav-item" id="nav-pbf" onclick="navigate('pbf')">PBF</button>
+        <button class="nav-item" id="nav-import" onclick="navigate('import')">Import</button>
+        <button class="nav-item" id="nav-items" onclick="navigate('items')">Barang</button>
+    </div>
+</div>
 
 <script>
-const K='OPV6_CLEAN'; // Ganti nama key untuk memaksa memori baru
-let d = {items:[], pbf:[], offers:[], importHistory:[]};
-try {
-    let raw = localStorage.getItem(K);
-    if(raw) { let parsed = JSON.parse(raw); if(parsed && Array.isArray(parsed.items)) d = parsed; }
-} catch(err) { console.error("Format data rusak"); }
+    /* =========================================
+       1. DATABASE LOKAL (SAFE LOCALSTORAGE)
+    ========================================= */
+    const STORAGE_KEY = 'ORDER_PINTAR_DB_V7';
+    let db = { master_barang: [], master_pbf: [], produk_pbf: [] };
 
-if(d.items.length === 0) {
-    d.items = [{id:'i1',name:'Contoh Obat',unit:'tablet',real:10,sys:10,rop:50}];
-    d.pbf = [{id:'p1',name:'PBF Contoh',term:30,tol:0,profile:'Ketat'}];
-    localStorage.setItem(K,JSON.stringify(d));
-}
-
-const menus=[['dash','Dashboard'],['items','Master Barang'],['pbf','Master PBF'],['offers','Produk PBF'],['import','Import PBF'],['stock','Stok & ROP'],['order','Order Pintar']];
-let page='dash', edit=null, importState=null, importDraft=null;
-const $=x=>document.getElementById(x);
-function saveDB(){ localStorage.setItem(K,JSON.stringify(d)); }
-const money=n=>'Rp '+Math.round(n||0).toLocaleString('id-ID');
-const I=id=>d.items.find(x=>x.id==id), P=id=>d.pbf.find(x=>x.id==id);
-
-function hardReset() { if(confirm("Hapus semua data?")) { localStorage.removeItem(K); location.reload(); } }
-
-function imports(){
-    let pbfOptions = d.pbf.map(x=>`<option value="${x.id}">${x.name}</option>`).join('');
-    if(!pbfOptions) pbfOptions = `<option value="">-- Buat Master PBF Dahulu --</option>`;
-    $('view').innerHTML=`
-    <div class="card" style="background:#2563eb;color:#fff;margin-bottom:16px"><h2 style="margin:0 0 5px">Import PBF (Mode Stabil)</h2></div>
-    <div class="card">
-        <b>1. Pilih PBF</b><select id="impPbf" style="width:100%;padding:11px;margin:10px 0;border:1px solid #d8dee8;border-radius:10px">${pbfOptions}</select>
-        <b>2. Pilih file Excel/CSV</b><input id="impFile" type="file" accept=".xlsx,.xls,.csv" style="width:100%;padding:12px;margin:10px 0;border:1px dashed #94a3b8;border-radius:10px">
-        <button class="btn primary" style="width:100%;padding:14px" onclick="previewImport()">Baca File Sekarang</button>
-    </div>
-    <div id="impResult" style="margin-top:16px"></div>`;
-}
-
-function N(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').replace(/\b(tab|tablet|kapsul|caps|cap|box|dus|strip|blister|botol|pcs|pack)\b/g,' ').replace(/\s+/g,' ').trim()}
-function sim(a,b){a=N(a);b=N(b);if(a===b)return 1;let A=new Set(a.split(' ')),B=new Set(b.split(' '));return [...A].filter(x=>B.has(x)).length/Math.max(A.size||1,B.size||1)}
-function matchItem(name){let best=null,sc=0;for(let x of d.items){let q=sim(name,x.name);if(q>sc){sc=q;best=x}}return sc>=0.55?best:null}
-function headerKey(s){return String(s??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim()}
-function findColIndex(headers, aliases){let scored = headers.map((h, i) => {let k = headerKey(h), score = 0;for(let a of aliases){let ak = headerKey(a);if(k === ak) score = Math.max(score, 100);else if(k.includes(ak)) score = Math.max(score, 60 + ak.length/10);}return {idx: i, score};}).sort((a,b)=>b.score-a.score);return (scored[0] && scored[0].score >= 60) ? scored[0].idx : -1;}
-function chooseHeader(rows){let best={idx:-1,score:-1,headers:[]};for(let i=0; i<Math.min(rows.length, 40); i++){let h=(rows[i]||[]).map(v=>String(v??'').trim());let text=h.map(headerKey);let score=0;if(text.some(x=>/nama|produk|description|item/.test(x))) score+=3;if(text.some(x=>/hna|hpp|harga|netto|^h\d/.test(x))) score+=3;if(score > best.score) best={idx:i,score,headers:h};}return best;}
-function readNum(v){let s=String(v??'').replace(/[^0-9,.-]/g,'');if(!s) return 0;if(s.includes(',')&&s.includes('.')){s=(s.lastIndexOf(',')>s.lastIndexOf('.'))?s.replace(/\./g,'').replace(',','.'):s.replace(/,/g,'');}else if(s.includes(','))s=s.replace(',','.');return Number(s)||0;}
-
-function previewImport(){
-    let f=$('impFile').files[0], pf=$('impPbf').value;
-    if(!pf||!f) return alert('Pilih PBF dan file Excel dulu!');
-    if(typeof XLSX==='undefined') return alert('Gagal memuat pustaka XLSX. Pastikan koneksi jalan.');
-    $('impResult').innerHTML = `<div class="card"><p>Memproses file...</p></div>`;
-    
-    let reader = new FileReader();
-    reader.onload = function(e) {
+    function initDB() {
         try {
-            let data = new Uint8Array(e.target.result), wb = XLSX.read(data, {type: 'array'});
-            let selected=null, allRows=null;
-            for(const sn of wb.SheetNames){
-                const arr=XLSX.utils.sheet_to_json(wb.Sheets[sn], {header:1, defval:'', raw:true});
-                const h=chooseHeader(arr);
-                if(h && (!selected || h.score > selected.score)){ selected=h; allRows=arr; }
+            const rawData = localStorage.getItem(STORAGE_KEY);
+            if (rawData) {
+                const parsed = JSON.parse(rawData);
+                if (parsed && Array.isArray(parsed.master_pbf)) {
+                    db = parsed;
+                }
+            } else {
+                // Data awal jika kosong
+                db.master_pbf = [
+                    { id: 'PBF-001', nama: 'PT. KINARYA MITRA SEJAHTERA' },
+                    { id: 'PBF-002', nama: 'PT. CASPER' }
+                ];
+                saveDB();
             }
-            if(!selected || selected.score < 1) throw new Error('Kolom harga & nama tidak terdeteksi otomatis.');
-            importState = { file: f.name, pbf: pf, allRows, headerIdx: selected.idx };
-            renderMappingUI();
-        } catch(err) { $('impResult').innerHTML=`<div class="card danger"><b>Error:</b> ${err.message}</div>`; }
-    };
-    reader.readAsArrayBuffer(f);
-}
-
-function renderMappingUI(){
-    let rows = importState.allRows, hIdx = importState.headerIdx, headers = (rows[hIdx]||[]).map(v=>String(v??'').trim());
-    let cols = {
-        name: findColIndex(headers, ['nama','produk','barang']), unit: findColIndex(headers, ['satuan','unit']),
-        conv: findColIndex(headers, ['isi','konversi']), stock: findColIndex(headers, ['stok','qty']),
-        hna: findColIndex(headers, ['hna','harga normal']), disc1: findColIndex(headers, ['disc 1','diskon']),
-        hpp: findColIndex(headers, ['hpp','harga netto','harga beli','h1']), final: findColIndex(headers, ['harga 2','h2'])
-    };
-    if(cols.name === -1) cols.name = headers.findIndex((h,i)=> h && i!==cols.unit && !/^(no|stok|qty|harga|disc)/i.test(headerKey(h)));
-    let mkOpts = (selIdx) => `<option value="-1">-- Abaikan --</option>` + headers.map((h,i)=>`<option value="${i}" ${i===selIdx?'selected':''}>Col ${i+1}: ${h||'(Kosong)'}</option>`).join('');
-    
-    $('impResult').innerHTML = `
-    <div class="card" style="border-top:4px solid #f59e0b"><h3 style="margin-top:0">Cocokkan Kolom</h3>
-        <div class="grid" style="grid-template-columns:1fr 1fr; background:#f8fafc; padding:15px; border-radius:12px">
-            <div class="field"><label>Nama Barang</label><select id="mNm">${mkOpts(cols.name)}</select></div>
-            <div class="field"><label>Harga Nett / HPP</label><select id="mHp">${mkOpts(cols.hpp)}</select></div>
-            <div class="field"><label>HNA (Harga Dasar)</label><select id="mHn">${mkOpts(cols.hna)}</select></div>
-            <div class="field"><label>Diskon (%)</label><select id="mDs">${mkOpts(cols.disc1)}</select></div>
-            <div class="field"><label>Harga Final (H2)</label><select id="mFn">${mkOpts(cols.final)}</select></div>
-            <div class="field"><label>Isi (Konversi)</label><select id="mCv">${mkOpts(cols.conv)}</select></div>
-        </div><button class="btn primary" style="margin-top:15px; width:100%" onclick="renderPreviewTable()">Lihat Data</button>
-    </div><div id="previewTableCont"></div>`;
-}
-
-window.renderPreviewTable = function(){
-    let c = { name: parseInt($('mNm').value), conv: parseInt($('mCv').value), hna: parseInt($('mHn').value), disc1: parseInt($('mDs').value), hpp: parseInt($('mHp').value), final: parseInt($('mFn').value) };
-    if(c.name === -1) return alert('Nama Barang wajib!'); 
-    let parsed = [];
-    for(let i = importState.headerIdx + 1; i < importState.allRows.length; i++){
-        let r = importState.allRows[i] || []; let name = String(r[c.name] ?? '').trim();
-        if(!name) continue;
-        let rawPrice = 0, pFinal = c.final !== -1 ? readNum(r[c.final]) : 0, pHpp = c.hpp !== -1 ? readNum(r[c.hpp]) : 0, pHna = c.hna !== -1 ? readNum(r[c.hna]) : 0;
-        if(pFinal > 0) { rawPrice = pFinal; } else if (pHpp > 0) { rawPrice = pHpp; } else if (pHna > 0) { rawPrice = pHna; let d1 = c.disc1 !== -1 ? readNum(r[c.disc1]) : 0; if(d1 > 0 && d1 <= 100) rawPrice *= (1 - d1/100); }
-        if(!(rawPrice > 0)) continue;
-        let conv = c.conv !== -1 ? readNum(r[c.conv]) : 1; if(!(conv > 0)) conv = 1;
-        parsed.push({ name, conv, price: rawPrice });
+        } catch (e) {
+            console.error("Gagal membaca memori lokal", e);
+        }
     }
-    if(!parsed.length) return alert('Tidak ada data harga yang valid ditemukan.');
-    const show = parsed.slice(0, 10).map(x => `<tr><td>${x.name}</td><td>${money(x.price)}</td><td>${x.conv}</td></tr>`).join('');
-    $('previewTableCont').innerHTML = `<div class="card"><h3 style="margin-top:0">Preview (${parsed.length} data valid)</h3><div class="tablebox"><table class="table"><thead><tr><th>Nama</th><th>Harga</th><th>Isi</th></tr></thead><tbody>${show}</tbody></table></div></div>`;
-}
 
-function nav(){let h=menus.map(m=>`<button class="${page==m[0]?'on':''}" onclick="go('${m[0]}')">${m[1]}</button>`).join('');$('nav').innerHTML=h;$('mobile').innerHTML=h}
-window.go = function(x){page=x;nav();render()}
-function render(){let m=menus.find(x=>x[0]==page);$('title').textContent=m[1];$('add').style.display=['items','pbf','offers'].includes(page)?'block':'none';if(page=='dash') dash(); else if(page=='items') items(); else if(page=='pbf') pbf(); else if(page=='offers') offers(); else if(page=='import') imports(); else if(page=='stock') stock(); else orders();}
-function dash(){$('view').innerHTML=`<div class="card" style="background:#2563eb;color:#fff;margin-bottom:16px"><h2 style="margin:0 0 5px">Order Pintar</h2></div><div class="grid"><div class="card stat"><small>Master Barang</small><strong>${d.items.length}</strong></div><div class="card stat"><small>PBF</small><strong>${d.pbf.length}</strong></div></div><div class="card section"><button class="btn danger" onclick="hardReset()">Reset Data</button></div>`;}
-function table(head,rows){$('view').innerHTML=`<div class="tablebox"><table class="table"><thead><tr>${head.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows||`<tr><td colspan="${head.length}" style="text-align:center;padding:30px">Data kosong</td></tr>`}</tbody></table></div>`}
-function items(){table(['Barang','Satuan','Real','Sistem','ROP'],d.items.map(x=>`<tr><td><b>${x.name}</b></td><td>${x.unit}</td><td>${x.real}</td><td>${x.sys}</td><td>${x.rop}</td></tr>`).join(''))}
-function pbf(){table(['PBF','Termin','Aksi'],d.pbf.map(x=>`<tr><td><b>${x.name}</b></td><td>${x.term} hari</td><td><button class="btn danger" onclick="delP('${x.id}')">Hapus</button></td></tr>`).join(''))}
-function offers(){table(['Barang','PBF','Harga'],d.offers.map(x=>`<tr><td>${x.name}</td><td>${P(x.pbf)?.name}</td><td>${money(x.price)}</td></tr>`).join(''))}
-function stock(){$('view').innerHTML='<div class="card">Fitur dimatikan sementara untuk kestabilan</div>'}
-function orders(){$('view').innerHTML='<div class="card">Fitur dimatikan sementara untuk kestabilan</div>'}
+    function saveDB() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+    }
 
-function modal(title,body,fn){$('mt').textContent=title;$('mb').innerHTML=body;$('save').onclick=fn;$('modal').classList.add('show')}
-window.closeM = function(){$('modal').classList.remove('show');edit=null}$('add').onclick=()=>page=='items'?alert('Fitur tambah dinonaktifkan di versi bersih ini, khusus test import'):page=='pbf'?editP():alert('');
-window.editP = function(){modal('Tambah PBF','<div class="form"><div class="field full"><label>Nama PBF</label><input id="n"></div></div>', ()=>{ d.pbf.push({id:'p'+Date.now(),name:$('n').value,term:30}); saveDB(); closeM(); render(); })}
-window.delP = function(id){ d.pbf=d.pbf.filter(x=>x.id!=id); saveDB(); render(); }
-nav(); render();
+    function resetData() {
+        if(confirm("HAPUS SEMUA DATA? Tindakan ini tidak bisa dibatalkan.")) {
+            localStorage.removeItem(STORAGE_KEY);
+            location.reload();
+        }
+    }
+
+    /* =========================================
+       2. NAVIGASI ANTAR HALAMAN
+    ========================================= */
+    function navigate(page) {
+        // Update menu active state
+        document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+        const activeBtn = document.getElementById('nav-' + page);
+        if(activeBtn) activeBtn.classList.add('active');
+
+        const content = document.getElementById('app-content');
+        
+        if (page === 'dash') renderDashboard(content);
+        else if (page === 'pbf') renderPBF(content);
+        else if (page === 'import') renderImport(content);
+        else if (page === 'items') renderItems(content);
+    }
+
+    /* =========================================
+       3. RENDER HALAMAN
+    ========================================= */
+    function renderDashboard(container) {
+        container.innerHTML = `
+            <div class="card">
+                <h2 class="card-title">Ringkasan Sistem</h2>
+                <div class="mapping-grid">
+                    <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+                        <div style="font-size: 12px; color: gray;">Total Master Barang</div>
+                        <div style="font-size: 24px; font-weight: bold;">${db.master_barang.length}</div>
+                    </div>
+                    <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+                        <div style="font-size: 12px; color: gray;">Total Mitra PBF</div>
+                        <div style="font-size: 24px; font-weight: bold;">${db.master_pbf.length}</div>
+                    </div>
+                    <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid var(--border); grid-column: 1 / -1;">
+                        <div style="font-size: 12px; color: gray;">Total Produk PBF (Harga Terpetakan)</div>
+                        <div style="font-size: 24px; font-weight: bold; color: var(--blue);">${db.produk_pbf.length}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderPBF(container) {
+        let rows = db.master_pbf.map(p => `
+            <tr>
+                <td>${p.id}</td>
+                <td><strong>${p.nama}</strong></td>
+            </tr>
+        `).join('');
+
+        container.innerHTML = `
+            <div class="card">
+                <h2 class="card-title">Daftar Master PBF</h2>
+                <div class="form-group">
+                    <label>Tambah PBF Baru</label>
+                    <input type="text" id="new-pbf-name" class="form-control" placeholder="Ketik nama PBF...">
+                    <button class="btn btn-primary btn-block" onclick="addPBF()">Simpan PBF</button>
+                </div>
+                <div class="table-responsive" style="margin-top: 20px;">
+                    <table>
+                        <thead><tr><th>ID</th><th>Nama PBF</th></tr></thead>
+                        <tbody>${rows || '<tr><td colspan="2">Belum ada PBF</td></tr>'}</tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
+    function addPBF() {
+        const nameInput = document.getElementById('new-pbf-name').value.trim();
+        if (!nameInput) return alert("Nama PBF tidak boleh kosong!");
+        db.master_pbf.push({ id: 'PBF-' + Date.now().toString().slice(-4), nama: nameInput });
+        saveDB();
+        navigate('pbf');
+    }
+
+    function renderItems(container) {
+        let rows = db.produk_pbf.map(p => {
+            let pbf = db.master_pbf.find(x => x.id === p.pbf_id);
+            return `
+            <tr>
+                <td><strong>${p.nama_barang}</strong><br><small style="color:gray">${pbf ? pbf.nama : 'Unknown'}</small></td>
+                <td>Rp ${p.harga_final.toLocaleString('id-ID')}</td>
+            </tr>`;
+        }).join('');
+
+        container.innerHTML = `
+            <div class="card">
+                <h2 class="card-title">Database Harga Produk PBF</h2>
+                <div class="alert alert-info">Data di bawah ini adalah hasil yang telah berhasil diimpor melalui Smart Mapper.</div>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Nama Barang & PBF</th><th>Harga Nett (Final)</th></tr></thead>
+                        <tbody>${rows || '<tr><td colspan="2">Belum ada data produk hasil impor. Silakan lakukan import PBF.</td></tr>'}</tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
+    /* =========================================
+       4. MODUL IMPORT (SMART MAPPER INTI)
+    ========================================= */
+    // Variabel Global Sementara untuk menampung file sebelum di-save
+    let tempImportData = { pbf_id: '', rawRows: [], headerIndex: 0 };
+
+    function renderImport(container) {
+        let pbfOptions = db.master_pbf.map(p => `<option value="${p.id}">${p.nama}</option>`).join('');
+        
+        container.innerHTML = `
+            <div class="card">
+                <h2 class="card-title">Smart Mapper Import Excel</h2>
+                <div class="alert alert-info" id="import-status">Pastikan koneksi internet aktif karena sistem membutuhkan library pembaca Excel.</div>
+                
+                <div class="form-group">
+                    <label>1. Pilih PBF Asal File</label>
+                    <select id="import-pbf-id" class="form-control">
+                        <option value="">-- Pilih PBF --</option>
+                        ${pbfOptions}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>2. Pilih File Excel PBF (.xlsx / .xls)</label>
+                    <input type="file" id="import-file" accept=".xlsx, .xls, .csv" class="form-control">
+                </div>
+                
+                <button class="btn btn-primary btn-block" onclick="processExcel()">Baca File Excel</button>
+            </div>
+            
+            <div id="mapping-container"></div>
+        `;
+    }
+
+    function processExcel() {
+        const fileInput = document.getElementById('import-file');
+        const pbfId = document.getElementById('import-pbf-id').value;
+        const statusBox = document.getElementById('import-status');
+
+        if (!pbfId) return alert("Pilih PBF terlebih dahulu!");
+        if (fileInput.files.length === 0) return alert("Pilih file Excel terlebih dahulu!");
+        if (typeof XLSX === 'undefined') return alert("Gagal memuat sistem pembaca Excel. Cek koneksi Anda atau muat ulang halaman.");
+
+        statusBox.className = "alert alert-info";
+        statusBox.innerText = "Membaca file, mohon tunggu...";
+
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                
+                // Ambil sheet pertama saja
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                
+                // Ubah menjadi array of arrays
+                const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+                
+                if (rawRows.length === 0) throw new Error("File Excel kosong.");
+
+                // Tebak baris mana yang merupakan header (mencari baris yang punya kata "nama" atau "barang")
+                let guessedHeaderIndex = 0;
+                for (let i = 0; i < Math.min(rawRows.length, 20); i++) {
+                    const rowText = rawRows[i].join(" ").toLowerCase();
+                    if (rowText.includes("nama") || rowText.includes("barang") || rowText.includes("produk")) {
+                        guessedHeaderIndex = i;
+                        break;
+                    }
+                }
+
+                tempImportData.pbf_id = pbfId;
+                tempImportData.rawRows = rawRows;
+                tempImportData.headerIndex = guessedHeaderIndex;
+
+                statusBox.className = "alert alert-success";
+                statusBox.innerText = "File berhasil dibaca. Silakan atur kolom di bawah ini.";
+                
+                buildMappingUI();
+
+            } catch (err) {
+                statusBox.className = "alert alert-danger";
+                statusBox.innerText = "Error membaca file: " + err.message;
+            }
+        };
+
+        reader.readAsArrayBuffer(file);
+    }
+
+    function buildMappingUI() {
+        const container = document.getElementById('mapping-container');
+        const headers = tempImportData.rawRows[tempImportData.headerIndex];
+        
+        // Fungsi pembantu pembuat dropdown
+        const createOptions = (guessKeywords) => {
+            let options = `<option value="-1">-- Abaikan / Tidak Ada --</option>`;
+            headers.forEach((colName, index) => {
+                let text = colName ? colName.toString().trim() : `Kolom ${index + 1}`;
+                
+                // Auto-select berdasarkan tebakan keyword
+                let isSelected = "";
+                guessKeywords.forEach(kw => {
+                    if (text.toLowerCase().includes(kw)) isSelected = "selected";
+                });
+                
+                options += `<option value="${index}" ${isSelected}>[Kolom ${index + 1}] ${text}</option>`;
+            });
+            return options;
+        };
+
+        container.innerHTML = `
+            <div class="card" style="border-top: 4px solid #f59e0b;">
+                <h2 class="card-title">Cocokkan Kolom PBF</h2>
+                <div class="form-group">
+                    <label>Baris Judul Kolom (Sistem menebak baris ${tempImportData.headerIndex + 1})</label>
+                    <input type="number" id="map-header-row" class="form-control" value="${tempImportData.headerIndex + 1}" onchange="changeHeaderRow()">
+                </div>
+                
+                <div class="mapping-grid">
+                    <div class="form-group">
+                        <label>Nama Barang *</label>
+                        <select id="map-nama" class="form-control">${createOptions(['nama', 'barang', 'produk'])}</select>
+                    </div>
+                    <div class="form-group">
+                        <label>Harga HPP / Harga Nett / Harga Beli *</label>
+                        <select id="map-hpp" class="form-control">${createOptions(['hpp', 'netto', 'harga 1', 'h1'])}</select>
+                    </div>
+                    <div class="form-group">
+                        <label>Harga Normal (HNA)</label>
+                        <select id="map-hna" class="form-control">${createOptions(['hna', 'normal'])}</select>
+                    </div>
+                    <div class="form-group">
+                        <label>Diskon 1 (%)</label>
+                        <select id="map-disc" class="form-control">${createOptions(['disc', 'diskon'])}</select>
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary btn-block" style="margin-top:20px" onclick="previewData()">Terapkan & Lihat Hasil</button>
+            </div>
+            
+            <div id="preview-container"></div>
+        `;
+    }
+
+    function changeHeaderRow() {
+        const val = parseInt(document.getElementById('map-header-row').value) - 1;
+        if (val >= 0 && val < tempImportData.rawRows.length) {
+            tempImportData.headerIndex = val;
+            buildMappingUI();
+        }
+    }
+
+    // Pembersih angka murni
+    function parseAngka(val) {
+        if (!val) return 0;
+        if (typeof val === 'number') return val;
+        let str = val.toString().replace(/[^0-9,.-]/g, '');
+        if (str.includes(',') && str.includes('.')) {
+            str = str.lastIndexOf(',') > str.lastIndexOf('.') ? str.replace(/\./g, '').replace(',', '.') : str.replace(/,/g, '');
+        } else if (str.includes(',')) {
+            str = str.replace(',', '.');
+        }
+        let num = parseFloat(str);
+        return isNaN(num) ? 0 : num;
+    }
+
+    let tempFinalItems = [];
+
+    function previewData() {
+        const idxNama = parseInt(document.getElementById('map-nama').value);
+        const idxHPP = parseInt(document.getElementById('map-hpp').value);
+        const idxHNA = parseInt(document.getElementById('map-hna').value);
+        const idxDisc = parseInt(document.getElementById('map-disc').value);
+
+        if (idxNama === -1) return alert("Kolom Nama Barang wajib diisi!");
+        if (idxHPP === -1 && idxHNA === -1) return alert("Minimal isi HPP atau HNA!");
+
+        tempFinalItems = [];
+        let skipped = 0;
+
+        // Mulai baca data 1 baris di bawah header
+        for (let i = tempImportData.headerIndex + 1; i < tempImportData.rawRows.length; i++) {
+            const row = tempImportData.rawRows[i];
+            if (!row || row.length === 0) continue;
+
+            const nama = row[idxNama] ? row[idxNama].toString().trim() : '';
+            if (!nama) { skipped++; continue; }
+
+            const hpp = idxHPP !== -1 ? parseAngka(row[idxHPP]) : 0;
+            const hna = idxHNA !== -1 ? parseAngka(row[idxHNA]) : 0;
+            const disc = idxDisc !== -1 ? parseAngka(row[idxDisc]) : 0;
+
+            let hargaFinal = 0;
+            let ketHarga = "";
+
+            if (hpp > 0) {
+                hargaFinal = hpp;
+                ketHarga = "Berdasarkan HPP/Nett";
+            } else if (hna > 0) {
+                hargaFinal = hna;
+                if (disc > 0 && disc <= 100) {
+                    hargaFinal = hna - (hna * (disc / 100));
+                    ketHarga = "HNA dipotong Diskon " + disc + "%";
+                } else {
+                    ketHarga = "Berdasarkan HNA murni";
+                }
+            }
+
+            if (hargaFinal <= 0) { skipped++; continue; }
+
+            tempFinalItems.push({
+                nama_barang: nama,
+                harga_final: Math.round(hargaFinal),
+                keterangan: ketHarga
+            });
+        }
+
+        const container = document.getElementById('preview-container');
+        
+        let rowsHTML = tempFinalItems.slice(0, 10).map(item => `
+            <tr>
+                <td>${item.nama_barang}</td>
+                <td><strong>Rp ${item.harga_final.toLocaleString('id-ID')}</strong><br><small style="color:gray">${item.keterangan}</small></td>
+            </tr>
+        `).join('');
+
+        container.innerHTML = `
+            <div class="card">
+                <h2 class="card-title">Preview Data Siap Simpan</h2>
+                <div class="alert alert-success">Berhasil mengekstrak <b>${tempFinalItems.length}</b> barang valid. (Dilewati: ${skipped} baris kosong/harga nol).</div>
+                
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Nama Barang</th><th>Harga Final Dihitung</th></tr></thead>
+                        <tbody>${rowsHTML}</tbody>
+                    </table>
+                </div>
+                ${tempFinalItems.length > 10 ? `<p style="text-align:center; color:gray; font-size: 12px; margin-top:10px;">Menampilkan 10 data pertama sebagai contoh...</p>` : ''}
+                
+                <button class="btn btn-primary btn-block" style="margin-top:15px; padding:15px; font-size:16px;" onclick="saveImportData()">💾 Simpan ${tempFinalItems.length} Data ke Database</button>
+            </div>
+        `;
+    }
+
+    function saveImportData() {
+        if(tempFinalItems.length === 0) return;
+        
+        const pbfId = tempImportData.pbf_id;
+        
+        // Hapus data lama dari PBF yang sama agar tidak dobel
+        db.produk_pbf = db.produk_pbf.filter(p => p.pbf_id !== pbfId);
+        
+        // Masukkan data baru
+        tempFinalItems.forEach(item => {
+            db.produk_pbf.push({
+                id: 'PROD-' + Date.now() + Math.floor(Math.random()*1000),
+                pbf_id: pbfId,
+                nama_barang: item.nama_barang,
+                harga_final: item.harga_final
+            });
+        });
+
+        saveDB();
+        alert("Berhasil menyimpan " + tempFinalItems.length + " produk!");
+        navigate('items');
+    }
+
+    /* =========================================
+       5. INISIALISASI SAAT HALAMAN DIMUAT
+    ========================================= */
+    document.addEventListener('DOMContentLoaded', () => {
+        initDB();
+        navigate('dash');
+    });
+
 </script>
 </body>
 </html>
